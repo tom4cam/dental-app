@@ -1,6 +1,6 @@
 # Dental app: notes for Claude Code
 
-This private repository started as a copy of LibreDental (https://github.com/Cojekt/LibreDental, Apache-2.0). Tom Caswell and Michael Atkinson are turning it into a dental practice management app that works for a US practice. Michael knows how a front desk and a clinic really run. Ask him what an office needs, and explain your choices in plain English, because he is learning Claude Code as he goes.
+This repository started as a copy of LibreDental (https://github.com/Cojekt/LibreDental, Apache-2.0). Tom Caswell and Michael are turning it into a dental practice management app that works for a US practice. Michael knows how a front desk and a clinic really run. Ask him what an office needs, and explain your choices in plain English, because he is learning Claude Code as he goes.
 
 Read the upstream project's own rules first. They cover the layout, how to run it, and the care medical software needs:
 

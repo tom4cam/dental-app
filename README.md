@@ -1,5 +1,7 @@
 # LibreDental
 
+> **About this repository:** a derivative of [LibreDental](https://github.com/Cojekt/LibreDental) by Cojekt, used under the Apache License 2.0 (see `LICENSE`). Changes in this repository are made by Tom Caswell and contributors. It is not affiliated with or endorsed by the LibreDental project, and the sections below describe LibreDental as it was when copied.
+
 > **Open-Source Modern Dental Practice Management System**
 
 [![Code Review & Build (CI)](https://github.com/Cojekt/libredental/actions/workflows/ci.yml/badge.svg)](https://github.com/Cojekt/libredental/actions/workflows/ci.yml)
