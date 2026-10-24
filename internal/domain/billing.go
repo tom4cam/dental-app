@@ -107,6 +107,22 @@ type PatientBalance struct {
 	Outstanding int64  `json:"outstanding"`
 }
 
+// PatientAccount splits a patient's balance by who paid, for the front desk.
+// Outstanding uses the PatientBalance definition: billed minus every payment, insurance and
+// write-offs included, and it is not clamped, so a negative value is a credit on the account.
+type PatientAccount struct {
+	PatientID       string `json:"patient_id"`
+	TotalBilled     int64  `json:"total_billed"`
+	PaidByPatient   int64  `json:"paid_by_patient"`
+	PaidByInsurance int64  `json:"paid_by_insurance"`
+	WrittenOff      int64  `json:"written_off"`
+	Outstanding     int64  `json:"outstanding"`
+	// PendingClaims counts claims still waiting on the payer (draft, submitted or accepted).
+	PendingClaims   int    `json:"pending_claims"`
+	RejectedClaims  int    `json:"rejected_claims"`
+	LastPaymentDate string `json:"last_payment_date,omitempty"` // YYYY-MM-DD, write-offs excluded
+}
+
 // BundleItemTemplate is a CDT line item template stored inside a TreatmentBundle.
 type BundleItemTemplate struct {
 	ADACode     string `json:"ada_code"`

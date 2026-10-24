@@ -488,6 +488,59 @@ func (s *BillingService) GetPatientBalance(token string, patientID string) (*dom
 	}, nil
 }
 
+// GetPatientAccount returns one patient's balance split by who paid, plus how many claims are
+// still waiting on the payer. It is read-only and its Outstanding matches GetPatientBalance.
+func (s *BillingService) GetPatientAccount(token string, patientID string) (*domain.PatientAccount, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
+	if patientID == "" {
+		return nil, fmt.Errorf("%w: patient ID is required", storage.ErrInvalidInput)
+	}
+
+	ctx := context.Background()
+	claims, err := s.claimRepo.List(ctx, patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list claims: %w", err)
+	}
+	payments, err := s.payRepo.List(ctx, patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list payments: %w", err)
+	}
+
+	account := &domain.PatientAccount{PatientID: patientID}
+	for _, c := range claims {
+		account.TotalBilled += c.TotalFee()
+		switch c.Status {
+		case domain.ClaimStatusDraft, domain.ClaimStatusSubmitted, domain.ClaimStatusAccepted:
+			account.PendingClaims++
+		case domain.ClaimStatusRejected:
+			account.RejectedClaims++
+		}
+	}
+
+	var totalPaid int64
+	for _, p := range payments {
+		totalPaid += p.Amount
+		switch p.Method {
+		case domain.PaymentMethodInsurance:
+			account.PaidByInsurance += p.Amount
+		case domain.PaymentMethodWriteOff:
+			account.WrittenOff += p.Amount
+		default:
+			account.PaidByPatient += p.Amount
+		}
+		if p.Method != domain.PaymentMethodWriteOff && p.Date > account.LastPaymentDate {
+			account.LastPaymentDate = p.Date
+		}
+	}
+	account.Outstanding = account.TotalBilled - totalPaid
+
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, patientID, "patient_account", "Viewed patient account")
+	return account, nil
+}
+
 // GetAllPatientBalances computes outstanding balances for every patient with billing activity,
 // sorted by outstanding balance descending.
 func (s *BillingService) GetAllPatientBalances(token string) ([]*domain.PatientBalance, error) {
