@@ -27,19 +27,21 @@
 
 <header class="w-full border-b border-slate-800 bg-slate-900 shadow-sm">
   <!-- Top brand bar -->
-  <div class="flex h-16 w-full items-center justify-between px-6 sm:px-8">
-    <div class="flex items-center gap-3">
+  <div class="flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-8">
+    <div class="flex shrink-0 items-center gap-3">
       <img
         src="/sourceicon.svg"
         alt={logoAlt}
         class="h-9 w-9 rounded-xl shadow-md shadow-purple-500/20 object-contain"
       />
       <div class="flex items-center">
-        <h1 class="m-0 text-xl font-bold tracking-tight text-slate-50">LibreDental</h1>
+        <h1 class="m-0 hidden text-xl font-bold tracking-tight text-slate-50 sm:block">
+          LibreDental
+        </h1>
       </div>
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex min-w-0 items-center gap-2 sm:gap-3">
       {#if activeTab === "patients"}
         <button class="btn btn-primary shadow-md shadow-sky-500/20" onclick={onnewpatient}>
           <svg
@@ -73,7 +75,7 @@
       <button
         type="button"
         onclick={onopenstafflogin}
-        class="flex items-center justify-center rounded-xl border px-4 py-2 transition-all shadow-sm cursor-pointer min-w-[140px] font-bold text-sm {auth.currentStaffId
+        class="flex items-center justify-center rounded-xl border px-4 py-2 transition-all shadow-sm cursor-pointer min-w-0 truncate sm:min-w-[140px] font-bold text-sm {auth.currentStaffId
           ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
           : 'border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'}"
       >
