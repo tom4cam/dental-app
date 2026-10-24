@@ -8,7 +8,7 @@
 LibreDental offers two separate binaries for two distinct deployment models:
 
 - **Desktop App (`libredental`):** Standalone single-machine desktop application for solo practices operating on a single PC with zero networking.
-- **LAN Server (`libredental-server`):** Headless background service running on one central server PC that serves the web application over HTTP to browser clients.
+- **LAN Server (`libredental-server`):** Headless background service running on one central server PC that serves the web application to browser clients over HTTP, or over HTTPS when you turn it on (see [Secure connections](#secure-connections-https)).
 
 > **Note:** Client workstations connect to the server using standard web browsers (Chrome, Edge, Firefox). Remote workstation desktop binaries cannot connect over the network to a server instance. However, running the desktop app locally on the server PC itself is fully supported alongside the server process (safely sharing `libredental.db` via SQLite WAL mode).
 
@@ -124,6 +124,39 @@ On any computer on the local network, open a web browser and navigate to:
 
 *(Replace `192.168.1.100` with your server's static IP. Bookmark for easy access).*
 
+### Secure connections (HTTPS)
+
+By default the server speaks plain HTTP, which anyone on the same network can read, PINs
+included. Turn on HTTPS before anyone uses it over Wi-Fi, and always before real patient data
+goes in. It adds no software to install. Pick one:
+
+**Self-signed certificate (easiest).** Set `LIBREDENTAL_TLS=auto` and restart the server. The
+server makes a certificate the first time and keeps it in the `tls` folder next to the
+database (`libredental.db`), covering `localhost`, the computer's name and its current network
+addresses. A new network address, or a certificate close to expiry, gets a new one on the next
+start. Then open `https://192.168.1.100:4242` (note the `s`).
+
+A browser doesn't know a certificate it made itself, so each device shows a warning the first
+time: the connection is encrypted, but nobody has vouched for who is on the other end. On a
+workstation choose Advanced, then continue to the site. On a phone, do the same. For a
+warning-free setup, use a certificate your devices already trust, below.
+
+**Your own certificate.** Set `LIBREDENTAL_TLS_CERT` and `LIBREDENTAL_TLS_KEY` to the full paths
+of a certificate and its private key (both PEM files). A tool such as
+[mkcert](https://github.com/FiloSottile/mkcert) makes one that your computers trust once its
+root is installed on them, and a practice with its own domain name can use a real certificate.
+These two settings win over `LIBREDENTAL_TLS=auto`.
+
+If HTTPS is turned on and the certificate can't be used, the server refuses to start rather
+than quietly falling back to HTTP. Plain HTTP is only for a server kept on one computer
+(`LIBREDENTAL_HOST=127.0.0.1`) or for testing with demo data. At startup the server logs a
+warning when it is serving plain HTTP to the whole network.
+
+On Windows, set the variable for one run in PowerShell with
+`$env:LIBREDENTAL_TLS = "auto"` before starting the server, or permanently under System
+Properties, Environment Variables. On Linux add `Environment=LIBREDENTAL_TLS=auto` to the
+`[Service]` section of the systemd unit.
+
 ### Data Location & Daily Backups
 
 All patient data resides in a single SQLite database on the server PC:
@@ -147,5 +180,5 @@ Schedule via `crontab -e`: `0 23 * * * /opt/libredental/backup.sh`
 
 - **Server Self-Access:** If the LAN network switch fails, the Server PC can still access the system at `http://localhost:4242`.
 - **Concurrent Server & Desktop Execution:** Running the Desktop App (`libredental`) alongside the LAN Server (`libredental-server`) on the server machine under the same OS user account is supported and safe. Because LibreDental uses SQLite WAL mode (`journal_mode=WAL` with `busy_timeout=5000`), both binaries safely share access to `libredental.db` without data corruption.
-- **Host & Port Customization:** The server binds to `0.0.0.0` (all interfaces) on port `4242` by default. Set `LIBREDENTAL_PORT=8080` or `LIBREDENTAL_HOST=127.0.0.1` (or a specific IP like `192.168.1.100`) to customize.
+- **Host, Port & HTTPS Customization:** The server binds to `0.0.0.0` (all interfaces) on port `4242` by default. Set `LIBREDENTAL_PORT=8080` or `LIBREDENTAL_HOST=127.0.0.1` (or a specific IP like `192.168.1.100`) to customize. `LIBREDENTAL_TLS=auto`, or `LIBREDENTAL_TLS_CERT` with `LIBREDENTAL_TLS_KEY`, turns on HTTPS (see above). With HTTPS on, the self-access address is `https://localhost:4242`.
 - **Service Management (Linux):** `sudo systemctl [status|restart|stop] libredental`

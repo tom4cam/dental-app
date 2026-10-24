@@ -22,7 +22,7 @@ This list comes from Tom's review on October 19, 2026. Check each item by readin
 
 - A patient ledger, statements and aging reports.
 - Insurance eligibility checks and electronic payment posting (835). Claims already go out as 837D through Stedi.
-- Encryption of the SQLite database at rest. Staff PINs look like plain four-digit values, and the LAN server speaks plain HTTP.
+- Encryption of the SQLite database at rest. Staff PINs look like plain four-digit values, and the LAN server speaks plain HTTP unless `LIBREDENTAL_TLS=auto` (or a certificate in `LIBREDENTAL_TLS_CERT` and `LIBREDENTAL_TLS_KEY`) turns on HTTPS. HTTPS is not the default yet.
 - The full CDT code set, and a US-ready fee schedule and insurance workflow.
 
 Decide the order with Michael: what the front desk needs first matters more than what is technically interesting.

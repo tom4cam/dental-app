@@ -36,9 +36,22 @@ These all need a new database table or column, so they wait for a decision:
 
 ## Using it on a phone
 
-`task server` listens on the whole network by default. A phone on the same Wi-Fi can open `http://<the computer's address>:4242`. That connection is plain HTTP, so the PIN and everything on screen can be read by anyone on that network. Until the server is set up with a secure connection, use this with demo data only, never real patients.
+`task server` listens on the whole network by default. A phone on the same Wi-Fi can open
+`http://<the computer's address>:4242`, but that connection is plain HTTP, so the PIN and
+everything on screen can be read by anyone on that network.
 
-To keep the server on the one computer, start it with `LIBREDENTAL_HOST=127.0.0.1`.
+Turn on HTTPS first. Start the server with `LIBREDENTAL_TLS=auto` (on Windows PowerShell:
+`$env:LIBREDENTAL_TLS = "auto"` and then `task server`), and on the phone open
+`https://<the computer's address>:4242`. The first time, the phone warns that it doesn't know
+the certificate. That is expected for a certificate the server made itself: choose the option
+to continue, and the connection is encrypted from then on. The steps and the alternatives are in
+[lan-server-setup.md](lan-server-setup.md#secure-connections-https).
+
+HTTPS protects the connection only. The database on the computer isn't encrypted yet, and staff
+PINs are still stored as plain four-digit numbers (see CLAUDE.md), so keep to demo data until
+those are done.
+
+To keep the server on the one computer instead, start it with `LIBREDENTAL_HOST=127.0.0.1`.
 
 ## For developers
 
