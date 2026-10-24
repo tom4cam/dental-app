@@ -940,5 +940,9 @@
   "frontdesk_record_payment": "Record payment",
   "frontdesk_payment_saved": "Payment recorded.",
   "frontdesk_payment_error": "Could not record the payment.",
-  "frontdesk_amount_invalid": "Enter an amount greater than zero."
+  "frontdesk_amount_invalid": "Enter an amount greater than zero.",
+  "patient_allergies": "Allergies (comma separated)",
+  "patient_placeholder_allergies": "e.g. Latex, Penicillin, Sulfa drugs",
+  "patients_th_allergies": "Allergies",
+  "patients_no_alerts": "None"
 }

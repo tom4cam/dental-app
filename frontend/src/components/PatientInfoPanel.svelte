@@ -468,13 +468,31 @@
                 </span>
               {/each}
             </div>
-          {:else}
+          {:else if !(patient.allergies && patient.allergies.length > 0)}
             <span
               class="inline-block rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400"
               >{m.patients_clean_record()}
             </span>
+          {:else}
+            <span class="text-slate-400">{m.patients_no_alerts()}</span>
           {/if}
         </div>
+
+        {#if patient.allergies && patient.allergies.length > 0}
+          <div class="space-y-2 text-xs">
+            <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
+              {m.patients_th_allergies()}
+            </p>
+            <div class="flex flex-wrap gap-1.5">
+              {#each patient.allergies as allergy}
+                <span
+                  class="rounded-md border border-rose-400/30 bg-rose-500/15 px-2.5 py-1 text-xs font-medium text-rose-400"
+                  >{allergy}
+                </span>
+              {/each}
+            </div>
+          </div>
+        {/if}
 
         <!-- Actions -->
         <div class="pt-3 border-t border-slate-700/70 flex gap-2">
