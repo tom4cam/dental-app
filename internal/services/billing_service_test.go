@@ -874,3 +874,121 @@ func TestBillingService_ProviderConfigRequiresSessionAndAudits(t *testing.T) {
 		t.Error("Expected an audit entry for the claim provider config change")
 	}
 }
+
+func TestBillingService_GetPatientAccount(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "test_billing_service_account.db"))
+	if err != nil {
+		t.Fatalf("Failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	ctx := context.Background()
+	claimRepo := sqlite.NewClaimRepository(db)
+	paymentRepo := sqlite.NewPaymentRepository(db)
+	procRepo := sqlite.NewProcedureRepository(db)
+	patientRepo := sqlite.NewPatientRepository(db)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditSvc := NewAuditService(sqlite.NewAuditRepository(db), configRepo)
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+	billingSvc := NewBillingService(claimRepo, paymentRepo, sqlite.NewBundleRepository(db), procRepo, procRepo, sqlite.NewChartRepository(db), patientRepo, configRepo, NewSecretsService(), auditSvc)
+
+	if _, err := billingSvc.GetPatientAccount("bogus-token", "pat_acct_a"); err != ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized without a session, got %v", err)
+	}
+	if _, err := billingSvc.GetPatientAccount(token, ""); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Fatalf("Expected ErrInvalidInput for an empty patient ID, got %v", err)
+	}
+
+	for _, p := range []*domain.Patient{
+		{ID: "pat_acct_a", FirstName: "Alice", LastName: "A"},
+		{ID: "pat_acct_b", FirstName: "Bob", LastName: "B"},
+		{ID: "pat_acct_c", FirstName: "Cass", LastName: "C"},
+	} {
+		if err := patientRepo.Create(ctx, p); err != nil {
+			t.Fatalf("Failed to create patient %s: %v", p.ID, err)
+		}
+	}
+
+	// Patient A: billed 15000 across a draft claim (10000) and a rejected claim (5000), and a
+	// paid claim (2000) that must not count as pending or rejected.
+	for _, c := range []*domain.Claim{
+		{ID: "claim_acct_1", PatientID: "pat_acct_a", DateOfService: "2026-08-15", Status: domain.ClaimStatusDraft,
+			LineItems: []domain.ClaimLineItem{{ID: "li_1", ADACode: "D0120", Fee: 6000}, {ID: "li_2", ADACode: "D1110", Fee: 4000}}},
+		{ID: "claim_acct_2", PatientID: "pat_acct_a", DateOfService: "2026-08-16", Status: domain.ClaimStatusRejected,
+			LineItems: []domain.ClaimLineItem{{ID: "li_3", ADACode: "D2740", Fee: 5000}}},
+		{ID: "claim_acct_3", PatientID: "pat_acct_a", DateOfService: "2026-08-17", Status: domain.ClaimStatusPaid,
+			LineItems: []domain.ClaimLineItem{{ID: "li_4", ADACode: "D0140", Fee: 2000}}},
+	} {
+		if err := claimRepo.Create(ctx, c); err != nil {
+			t.Fatalf("Failed to create claim %s: %v", c.ID, err)
+		}
+	}
+	for _, p := range []*domain.Payment{
+		{ID: "pay_acct_1", PatientID: "pat_acct_a", Amount: 3000, Method: domain.PaymentMethodCash, Date: "2026-08-18"},
+		{ID: "pay_acct_2", PatientID: "pat_acct_a", Amount: 1000, Method: domain.PaymentMethodCreditCard, Date: "2026-08-20"},
+		{ID: "pay_acct_3", PatientID: "pat_acct_a", Amount: 500, Method: domain.PaymentMethodCheck, Date: "2026-08-19"},
+		{ID: "pay_acct_4", PatientID: "pat_acct_a", Amount: 4000, Method: domain.PaymentMethodInsurance, Date: "2026-08-21"},
+		{ID: "pay_acct_5", PatientID: "pat_acct_a", Amount: 700, Method: domain.PaymentMethodWriteOff, Date: "2026-08-25"},
+	} {
+		if _, err := billingSvc.RecordPayment(token, p); err != nil {
+			t.Fatalf("Failed to record payment %s: %v", p.ID, err)
+		}
+	}
+
+	account, err := billingSvc.GetPatientAccount(token, "pat_acct_a")
+	if err != nil {
+		t.Fatalf("Failed to get patient account: %v", err)
+	}
+	want := domain.PatientAccount{
+		PatientID:       "pat_acct_a",
+		TotalBilled:     17000,
+		PaidByPatient:   4500,
+		PaidByInsurance: 4000,
+		WrittenOff:      700,
+		Outstanding:     7800,
+		PendingClaims:   1,
+		RejectedClaims:  1,
+		LastPaymentDate: "2026-08-21", // the later write-off on 08-25 is not a payment
+	}
+	if *account != want {
+		t.Errorf("Unexpected account:\n got %+v\nwant %+v", *account, want)
+	}
+
+	// Same outstanding as the existing balance, so the two screens can never disagree.
+	balance, err := billingSvc.GetPatientBalance(token, "pat_acct_a")
+	if err != nil {
+		t.Fatalf("Failed to get patient balance: %v", err)
+	}
+	if balance.Outstanding != account.Outstanding || balance.TotalBilled != account.TotalBilled {
+		t.Errorf("Account %+v disagrees with balance %+v", *account, *balance)
+	}
+
+	// Patient B has no billing activity at all.
+	empty, err := billingSvc.GetPatientAccount(token, "pat_acct_b")
+	if err != nil {
+		t.Fatalf("Failed to get empty account: %v", err)
+	}
+	if *empty != (domain.PatientAccount{PatientID: "pat_acct_b"}) {
+		t.Errorf("Expected an all-zero account, got %+v", *empty)
+	}
+
+	// Patient C paid with no claim: a credit, reported as negative rather than clamped.
+	if _, err := billingSvc.RecordPayment(token, &domain.Payment{
+		ID: "pay_acct_6", PatientID: "pat_acct_c", Amount: 3000, Method: domain.PaymentMethodCash, Date: "2026-08-16",
+	}); err != nil {
+		t.Fatalf("Failed to record payment for patient C: %v", err)
+	}
+	credit, err := billingSvc.GetPatientAccount(token, "pat_acct_c")
+	if err != nil {
+		t.Fatalf("Failed to get credit account: %v", err)
+	}
+	if credit.Outstanding != -3000 || credit.PaidByPatient != 3000 {
+		t.Errorf("Expected a -3000 credit, got %+v", *credit)
+	}
+}
