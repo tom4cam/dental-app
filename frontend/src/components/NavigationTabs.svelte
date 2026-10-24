@@ -17,6 +17,11 @@
       enabled: true,
     },
     {
+      id: "frontdesk",
+      label: (getLocaleVersion(), m.nav_frontdesk()),
+      enabled: !!auth.token,
+    },
+    {
       id: "patients",
       label: (getLocaleVersion(), m.nav_patients()),
       enabled: !!auth.token,
@@ -50,13 +55,13 @@
 </script>
 
 <nav class="w-full border-t border-slate-800/80 select-none">
-  <div class="flex w-full items-center space-x-1 px-6 sm:px-8 pt-1.5">
+  <div class="flex w-full items-center space-x-1 overflow-x-auto px-4 sm:px-8 pt-1.5">
     {#each tabs as tab}
       {#if tab.enabled}
         <button
           type="button"
           onclick={() => ontabchange(tab.id)}
-          class={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all duration-150 rounded-t-lg outline-none ${
+          class={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-semibold transition-all duration-150 rounded-t-lg outline-none ${
             activeTab === tab.id
               ? "text-sky-400 bg-slate-950/60 shadow-sm"
               : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
@@ -69,7 +74,7 @@
         </button>
       {:else}
         <div
-          class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed opacity-50 hover:opacity-75 transition-opacity"
+          class="flex shrink-0 items-center gap-2 whitespace-nowrap px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed opacity-50 hover:opacity-75 transition-opacity"
           title={m.nav_requires_login()}
         >
           <span>{tab.label}</span>

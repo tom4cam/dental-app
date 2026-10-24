@@ -35,6 +35,7 @@
   import ClinicView from "./views/ClinicView.svelte";
   import PatientsView from "./views/PatientsView.svelte";
   import AppointmentsView from "./views/AppointmentsView.svelte";
+  import FrontDeskView from "./views/FrontDeskView.svelte";
   import ChartingView from "./views/ChartingView.svelte";
   import BillingView from "./views/BillingView.svelte";
   import AccountingView from "./views/AccountingView.svelte";
@@ -813,7 +814,7 @@
     onopenstafflogin={() => (showStaffLoginModal = true)}
   />
 
-  <main class="w-full p-6 sm:p-8 box-border flex-1">
+  <main class="w-full p-4 sm:p-8 box-border flex-1">
     {#if activeTab === "clinic"}
       <ClinicView
         bind:practiceConfig
@@ -823,6 +824,15 @@
         bind:operatories
         onrefresh={refreshClinic}
         onrequestlogin={() => (showStaffLoginModal = true)}
+      />
+    {:else if activeTab === "frontdesk"}
+      <FrontDeskView
+        {appointments}
+        patients={directoryPatients}
+        {providers}
+        {operatories}
+        {countryMeta}
+        onupdatestatus={handleUpdateApptStatus}
       />
     {:else if activeTab === "patients"}
       <PatientsView
