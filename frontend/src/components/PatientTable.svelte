@@ -103,12 +103,18 @@
               >{formatDateOnly(p.date_of_birth) || m.common_not_available()}</td
             >
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
-              {#if p.medical_alerts && p.medical_alerts.length > 0}
+              {#if (p.medical_alerts && p.medical_alerts.length > 0) || (p.allergies && p.allergies.length > 0)}
                 <div class="flex flex-wrap gap-1.5">
-                  {#each p.medical_alerts as alert}
+                  {#each p.medical_alerts ?? [] as alert}
                     <span
                       class="rounded-md border border-amber-400/30 bg-amber-500/15 px-2 py-1 text-xs font-medium text-amber-400"
                       >{alert}</span
+                    >
+                  {/each}
+                  {#each p.allergies ?? [] as allergy}
+                    <span
+                      class="rounded-md border border-rose-400/30 bg-rose-500/15 px-2 py-1 text-xs font-medium text-rose-400"
+                      >{allergy}</span
                     >
                   {/each}
                 </div>

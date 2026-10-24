@@ -53,6 +53,7 @@
     preferredProviderId = $bindable(),
     referralSource = $bindable(),
     medicalAlerts = $bindable(),
+    allergies = $bindable(),
     countryMeta,
     configuredProviders = [],
     errorMsg = "",
@@ -100,6 +101,7 @@
     preferredProviderId: string;
     referralSource: string;
     medicalAlerts: string;
+    allergies: string;
     countryMeta?: CountryConfig | null;
     configuredProviders?: Provider[];
     errorMsg?: string;
@@ -510,6 +512,14 @@
           type="text"
           bind:value={medicalAlerts}
           placeholder={m.patient_placeholder_alerts()}
+        />
+      </FormField>
+      <FormField label={m.patient_allergies()} forId="allergies">
+        <Input
+          id="allergies"
+          type="text"
+          bind:value={allergies}
+          placeholder={m.patient_placeholder_allergies()}
         />
       </FormField>
     </div>

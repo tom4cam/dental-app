@@ -175,6 +175,7 @@
   let preferredProviderId = $state("");
   let referralSource = $state("");
   let medicalAlerts = $state("");
+  let allergies = $state("");
 
   // Appointments state
   let appointments = $state<Appointment[]>([]);
@@ -377,7 +378,7 @@
     }
   }
 
-  function parseMedicalAlerts(value: string): string[] {
+  function parseList(value: string): string[] {
     return value
       .split(",")
       .map((s) => s.trim())
@@ -430,6 +431,7 @@
     preferredProviderId = "";
     referralSource = "";
     medicalAlerts = "";
+    allergies = "";
     patientError = "";
     showPatientModal = true;
   }
@@ -477,6 +479,7 @@
     preferredProviderId = p.preferred_provider_id || "";
     referralSource = p.referral_source || "";
     medicalAlerts = p.medical_alerts ? p.medical_alerts.join(", ") : "";
+    allergies = p.allergies ? p.allergies.join(", ") : "";
     patientError = "";
     showPatientModal = true;
   }
@@ -544,7 +547,8 @@
           p.reminder_opt_in = reminderOptIn;
           p.preferred_provider_id = preferredProviderId;
           p.referral_source = referralSource;
-          p.medical_alerts = parseMedicalAlerts(medicalAlerts);
+          p.medical_alerts = parseList(medicalAlerts);
+          p.allergies = parseList(allergies);
           await PatientService.UpdatePatient(auth.token, p);
         }
       } else {
@@ -592,8 +596,8 @@
           country_code: countryMeta.code,
           national_id_type: countryMeta.national_id_type,
           national_id: nationalId,
-          medical_alerts: parseMedicalAlerts(medicalAlerts),
-          allergies: [],
+          medical_alerts: parseList(medicalAlerts),
+          allergies: parseList(allergies),
           notes: "",
           version: 1,
           status: Status.StatusActive,
@@ -935,6 +939,7 @@
   bind:preferredProviderId
   bind:referralSource
   bind:medicalAlerts
+  bind:allergies
   {countryMeta}
   configuredProviders={providers}
   errorMsg={patientError}

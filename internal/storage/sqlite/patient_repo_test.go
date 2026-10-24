@@ -167,3 +167,44 @@ func TestPatientRepository_ListReturnsAllWithoutLimit(t *testing.T) {
 		t.Errorf("Expected explicit limit/offset to still apply (5 results), got %d", len(page))
 	}
 }
+
+// The patient form edits allergies as a list, so a change or a clearing must survive a save.
+func TestPatientRepository_AllergiesRoundTrip(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "test_patient_allergies.db"))
+	if err != nil {
+		t.Fatalf("Failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	ctx := context.Background()
+	repo := sqlite.NewPatientRepository(db)
+	if err := repo.Create(ctx, &domain.Patient{
+		ID: "pat_allergy", FirstName: "Test", LastName: "Patient", Status: domain.StatusActive,
+		Allergies: []string{"Latex"},
+	}); err != nil {
+		t.Fatalf("Failed to create patient: %v", err)
+	}
+
+	for _, want := range [][]string{{"Latex", "Penicillin", "Sulfa drugs"}, {}} {
+		p, err := repo.GetByID(ctx, "pat_allergy")
+		if err != nil {
+			t.Fatalf("Failed to get patient: %v", err)
+		}
+		p.Allergies = want
+		if err := repo.Update(ctx, p); err != nil {
+			t.Fatalf("Failed to update allergies to %v: %v", want, err)
+		}
+		got, err := repo.GetByID(ctx, "pat_allergy")
+		if err != nil {
+			t.Fatalf("Failed to reload patient: %v", err)
+		}
+		if len(got.Allergies) != len(want) {
+			t.Fatalf("Allergies after update: got %v, want %v", got.Allergies, want)
+		}
+		for i := range want {
+			if got.Allergies[i] != want[i] {
+				t.Errorf("Allergies[%d] = %q, want %q", i, got.Allergies[i], want[i])
+			}
+		}
+	}
+}

@@ -11,7 +11,7 @@ It runs in a browser, so it works on Windows, Mac and Chromebook, and the layout
 - **A check-in card per patient** ("Check-in details"):
   - the balance, split into billed, paid by the patient, paid by insurance and written off, with the number of claims still waiting on insurance and the date of the last payment;
   - the insurance carrier, policy and group, or a note when none is on file;
-  - medical alerts, and allergies when any are stored (no screen can enter allergies yet, so a blank doesn't mean the patient has none; adding that field to the patient form is a good next step);
+  - medical alerts, and allergies when any are stored (staff enter allergies in the patient form, next to medical alerts; a blank means none have been entered, not that the patient has none);
   - the phone number (tap to call on a phone), and the guarantor's name and phone if there is one.
 - **Take payment.** Cash, check or card, an amount, and a button that fills in the whole balance. It uses the same call as Billing & Claims > Payments, so the payment shows up there and in the audit trail.
 
