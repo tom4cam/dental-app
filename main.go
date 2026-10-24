@@ -94,16 +94,33 @@ func main() {
 	reminderService := services.NewReminderService(reminderRepo, patientRepo, appointmentRepo, practiceConfigRepo, notificationLogRepo, notificationService, auditService)
 
 	serverCfg := app.LoadServerConfig()
+	serverOpts := application.ServerOptions{
+		Host: serverCfg.Host,
+		Port: serverCfg.Port,
+	}
+	if app.IsServerBuild() {
+		serverTLS, err := serverCfg.TLS(appDir)
+		if err != nil {
+			log.Fatalf("Failed to set up HTTPS: %v", err)
+		}
+		switch {
+		case serverTLS != nil && serverTLS.SelfSigned:
+			serverOpts.TLS = &application.TLSOptions{CertFile: serverTLS.CertFile, KeyFile: serverTLS.KeyFile}
+			log.Printf("HTTPS is on, with a self-signed certificate (%s). Browsers warn about it the first time.", serverTLS.CertFile)
+		case serverTLS != nil:
+			serverOpts.TLS = &application.TLSOptions{CertFile: serverTLS.CertFile, KeyFile: serverTLS.KeyFile}
+			log.Printf("HTTPS is on, with the certificate %s.", serverTLS.CertFile)
+		case serverCfg.ExposedToNetwork():
+			log.Printf("Warning: serving plain HTTP to the whole network, so PINs and patient data can be read on it. Set LIBREDENTAL_TLS=auto for HTTPS, or LIBREDENTAL_HOST=127.0.0.1 to keep the server on this computer.")
+		}
+	}
 
 	wailsApp := application.New(application.Options{
 		Name:        "LibreDental",
 		Description: "Open-Source Dental Practice Management System",
 		// Server field is only active when built with -tags server.
 		// In desktop mode this field is ignored by Wails.
-		Server: application.ServerOptions{
-			Host: serverCfg.Host,
-			Port: serverCfg.Port,
-		},
+		Server: serverOpts,
 		Services: []application.Service{
 			newService(patientService),
 			newService(appointmentService),
